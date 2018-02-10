@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: prom-workshop
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      name: grafana
+      labels:
+        app: grafana
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3000'
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:4.6.3
+        ports:
+        - name: web
+          containerPort: 3000
+      
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: grafana
+  name: grafana
+  namespace: prom-workshop
+spec:
+  selector:
+    app: grafana
+  type: LoadBalancer
+  ports:
+  - name: grafana
+    protocol: TCP
+    port: 3000
+    nodePort: 31502
+    targetPort: web

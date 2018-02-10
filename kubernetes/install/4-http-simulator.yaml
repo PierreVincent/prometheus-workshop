@@ -1,0 +1,52 @@
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: http-simulator
+  namespace: prom-workshop
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: http-simulator
+  template:
+    metadata:
+      name: http-simulator
+      labels:
+        app: http-simulator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+      - name: http-simulator
+        image: gcr.io/sre-playground/prom-workshop/http-simulator:latest
+        ports:
+        - name: web
+          containerPort: 8080
+        resources:
+          limits:
+            memory: "128Mi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: http-simulator
+  name: http-simulator
+  namespace: prom-workshop
+spec:
+  type: LoadBalancer
+  selector:
+    app: http-simulator
+  ports:
+  - name: http-simulator
+    protocol: TCP
+    port: 8080
+    targetPort: web
