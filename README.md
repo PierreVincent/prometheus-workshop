@@ -2,6 +2,14 @@
 
 ## Objectives
 
+This workshop covers:
+
+- The core concepts of Prometheus
+- Querying Prometheus to gain insights on how your applications behave
+- Building Grafana dashboards combining multiple metrics
+- Defining rules to trigger alerts based on metrics and thresholds
+- Instrumenting Golang code to expose built-in and custom metrics
+
 ## Part 1: Querying Prometheus
 
 ### Requirements
