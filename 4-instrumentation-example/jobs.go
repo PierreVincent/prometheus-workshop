@@ -34,6 +34,13 @@ func NewJobQueue() *JobQueue {
 	}
 }
 
+func (jq *JobQueue) Size() int {
+	jq.mutex.Lock()
+	defer jq.mutex.Unlock()
+
+	return len(jq.q)
+}
+
 func (jq *JobQueue) Push(job *Job) {
 	jq.mutex.Lock()
 	defer jq.mutex.Unlock()

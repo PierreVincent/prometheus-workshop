@@ -11,9 +11,10 @@ func main() {
 	queue := NewJobQueue()
 
 	// Create a few workers
-	NewWorker(queue)
-	NewWorker(queue)
-	NewWorker(queue)
+	wm := NewWorkerManager(queue, 1, 4)
+
+	// Scale workers (10 jobs per worker)
+	go wm.ScaleWorkers(10)
 
 	// Start API
 	startHttpApi(queue)

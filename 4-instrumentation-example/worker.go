@@ -31,6 +31,7 @@ func (w *Worker) Run() {
 }
 
 func (w *Worker) ShutDown() {
+	w.shutdown = true
 	log.Printf("[Worker %s] Shutting down", w.id)
 }
 
@@ -43,5 +44,57 @@ func (w *Worker) pullJobAndRun() {
 	} else {
 		log.Printf("[Worker %s] Queue is empty. Backing off 5 seconds", w.id)
 		time.Sleep(5 * time.Second)
+	}
+}
+
+type WorkerManager struct {
+	workers    []*Worker
+	queue      *JobQueue
+	minWorkers int
+	maxWorkers int
+}
+
+func NewWorkerManager(queue *JobQueue, minWorkers int, maxWorkers int) (wm *WorkerManager) {
+	wm = &WorkerManager{
+		workers:    make([]*Worker, 0, maxWorkers),
+		queue:      queue,
+		minWorkers: minWorkers,
+		maxWorkers: maxWorkers,
+	}
+
+	// Initialise workerpool
+	for i := 0; i < minWorkers; i++ {
+		wm.addWorker()
+	}
+	return wm
+}
+
+func (wm *WorkerManager) addWorker() {
+	wm.workers = append(wm.workers, NewWorker(wm.queue))
+}
+
+func (wm *WorkerManager) shutdownWorker() {
+	if len(wm.workers) > 0 {
+		wm.workers[0].ShutDown()
+		wm.workers = wm.workers[1:]
+	}
+}
+
+func (wm *WorkerManager) ScaleWorkers(jobsWorkerRatio int) {
+	for {
+		queueSize := wm.queue.Size()
+		workerCount := len(wm.workers)
+
+		if (workerCount+1)*jobsWorkerRatio < queueSize && workerCount < wm.maxWorkers {
+			log.Println("[WorkerManager] Too much work, starting extra worker.")
+			wm.addWorker()
+		}
+
+		if (workerCount-1)*jobsWorkerRatio > queueSize && workerCount > wm.minWorkers {
+			log.Println("[WorkerManager] Not enough worker, shutting down 1 worker")
+			wm.shutdownWorker()
+		}
+
+		time.Sleep(10 * time.Second)
 	}
 }
