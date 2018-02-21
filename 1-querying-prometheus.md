@@ -74,7 +74,7 @@ Latency cannot be accurately measured through sums and averages, because it's a 
 
 Again, this metric is labeled by endpoint and status, so let's look at only the successful login requests for now:
 
-    http_request_duration_milliseconds_bucket{service="http-simulator", status="200", endpoint="/login"}
+    http_request_duration_milliseconds_bucket{app="http-simulator", status="200", endpoint="/login"}
 
 The remaining time series should only differ by their `le` label, which stands for "Less than or equal". For example, the counter with the label `le=50` is the number of successful login requests that took at most 50ms to complete.
 
@@ -86,7 +86,7 @@ In addition of buckets, Histograms expose 2 other metrics:
 
 These can be useful to derive rates out of the buckets. Let's imagine our login SLO is that 99% of requests respond within 200ms, we can try to query for the % of login requests within the SLO.
 
-    http_request_duration_milliseconds_bucket{service="http-simulator", status="200", endpoint="/login", le="200"} / http_request_duration_milliseconds_count{service="http-simulator", status="200", endpoint="/login"}
+    sum(http_request_duration_milliseconds_bucket{app="http-simulator", status="200", endpoint="/login", le="200"}) / sum(http_request_duration_milliseconds_count{app="http-simulator", status="200", endpoint="/login"})
 
 Another approach is to query Prometheus for the actual 99-percentile, using the `histogram_quantile()` function:
 
