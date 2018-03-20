@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: http-simulator
-        image: gcr.io/sre-playground/prom-workshop/http-simulator:latest
+        image: pierrevincent/prom-http-simulator:0.1
         ports:
         - name: web
           containerPort: 8080
