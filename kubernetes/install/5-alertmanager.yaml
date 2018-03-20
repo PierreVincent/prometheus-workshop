@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: prom-workshop
+data:
+  config.yml: |-
+    global:
+      # The smarthost and SMTP sender used for mail notifications.
+      smtp_smarthost: 'localhost:25'
+      smtp_from: 'alertmanager@example.org'
+    route:
+      receiver: 'default-receiver'
+      group_by: ['alertname', 'cluster']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      routes:
+      - receiver: pagerduty-receiver
+        match:
+          severity: critical
+      - receiver: email-receiver
+        match:
+          severity: major
+    receivers:
+    - name: 'pagerduty-receiver'
+      pagerduty_configs:
+      - service_key: <some_key>
+    - name: 'email-receiver'
+      email_configs:
+      - to: 'issues@example.com'
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'alerts_spam@example.com'
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: prom-workshop
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: alertmanager
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+  template:
+    metadata:
+      name: alertmanager
+      labels:
+        app: alertmanager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9093"
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.14.0
+        args:
+          - '--config.file=/etc/alertmanager/config.yml'
+          - '--storage.path=/alertmanager'
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+        ports:
+        - name: web
+          containerPort: 9093
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: alertmanager
+        resources:
+          limits:
+            memory: 512Mi
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: alertmanager
+  name: alertmanager
+  namespace: prom-workshop
+spec:
+  type: LoadBalancer
+  selector:
+    app: alertmanager
+  ports:
+  - name: alertmanager
+    protocol: TCP
+    port: 9093
+    targetPort: web
